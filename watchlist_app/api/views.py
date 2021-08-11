@@ -2,8 +2,10 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework import status, generics, viewsets
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle, ScopedRateThrottle
 
+from watchlist_app.api.throttling import ReviewCreateThrottle, ReviewListThrottle
 from watchlist_app.api.permissions import AdminOrReadOnly, ReviewUserOrReadOnly
 from watchlist_app.models import WatchList, StreamPlatform, Review
 from watchlist_app.api.serializers import ReviewSerializer,\
@@ -13,6 +15,8 @@ from watchlist_app.api.serializers import ReviewSerializer,\
 
 class ReviewCreate(generics.CreateAPIView):
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ReviewCreateThrottle]
 
     def get_queryset(self):
         return Review.objects.all()
@@ -42,7 +46,8 @@ class ReviewCreate(generics.CreateAPIView):
 class ReviewList(generics.ListAPIView):
     #  queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
+    throttle_classes = [ReviewListThrottle, AnonRateThrottle]
 
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -53,14 +58,19 @@ class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [ReviewUserOrReadOnly]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'review-detail'
+
 
 
 class StreamPlatformVS(viewsets.ReadOnlyModelViewSet):
     queryset = StreamPlatform.objects.all()
     serializer_class = StreamPlatformSerializer
+    permission_classes = [AdminOrReadOnly]
 
 
 class StreamPlatformAV(APIView):
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request):
         platforms = StreamPlatform.objects.all()
@@ -77,6 +87,7 @@ class StreamPlatformAV(APIView):
 
 
 class StreamDetailAV(APIView):
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request, pk):
         try:
@@ -104,6 +115,7 @@ class StreamDetailAV(APIView):
 
 
 class WatchListAV(APIView):
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request):
         movies = WatchList.objects.all()
@@ -120,6 +132,7 @@ class WatchListAV(APIView):
 
 
 class WatchDetailAV(APIView):
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request, pk):
         try:
