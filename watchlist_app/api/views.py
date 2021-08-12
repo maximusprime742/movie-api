@@ -21,7 +21,7 @@ class UserReview(generics.ListAPIView):
 
     def get_queryset(self):
         username = self.request.query_params.get('username', None)
-        return Review.objects.filter(review_user_username=username)
+        return Review.objects.filter(review_user__username=username)
 
 
 class ReviewCreate(generics.CreateAPIView):
@@ -153,6 +153,7 @@ class WatchListAV(APIView):
 
 class WatchDetailAV(APIView):
     permission_classes = [AdminOrReadOnly]
+    throttle_classes = [AnonRateThrottle]
 
     def get(self, request, pk):
         try:
